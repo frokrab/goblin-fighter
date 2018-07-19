@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, Button, Image } from 'react-native';
+import { StyleSheet, Text, View, Button, Image, TextInput } from 'react-native';
 const axios = require('axios');
 const palpacaSprite = require('./palpaca.png');
 const goblinSprite = require('./goblin.png');
@@ -239,6 +239,14 @@ export default class App extends React.Component {
       return (
         <Leaderboard back={this.changeDisplay}/>
       );
+    } else if (this.state.display === 'submit') {
+      return (
+        <ScoreSubmission 
+          score={this.state.goblinsKilled}
+          changeDisplay={this.changeDisplay}
+          rebirth={this.rebirth}
+        />
+      )
     }
   }
 }
@@ -303,20 +311,67 @@ class LeaderboardEntry extends React.Component {
   }
 }
 
-// DEATH SCREEN //
-class Death extends React.Component {
+// SCORE SUBMISSION SCREEN //
+class ScoreSubmission extends React.Component {
   constructor(props) {
-    super(props)
+    super(props);
+    this.state = {
+      name: '',
+    };
+
+    this.submitScore = this.submitScore.bind(this);
   }
 
   submitScore() {
-    // TODO
-    axios.post('http://54.219.137.82:6084/leaderboard')
+    axios.post('http://54.219.137.82:6084/leaderboard', {
+      name: this.state.name,
+      score: this.props.score,
+    })
+    .then(() => {
+      this.props.rebirth();
+      this.props.changeDisplay('leaderboard');
+    })
+    .catch(() => {
+      this.props.changeDisplay('stats');
+    });
   }
 
   render() {
     return (
       <View style={styles.statsContainer}>
+        <TextInput 
+          style={{
+            borderWidth: 1,
+            width: '40%',
+            marginBottom: 30
+          }}
+          onChangeText={name => this.setState({ name })}
+          value={this.state.name}
+          maxLength={3}
+          placeholder='NGP'
+          placeholderTextColor='gray'
+          autoCapitalize='characters'
+        />
+        <Button 
+          title='SUBMIT'
+          color='firebrick'
+          onPress={this.submitScore}
+          />
+      </View>
+    );
+  }
+
+}
+
+// DEATH SCREEN //
+class Death extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+    return (
+      <View style={styles.deathContainer}>
         <Text style={{fontSize: 25}}>roses are red</Text>
         <Text style={{fontSize: 25}}>violets are blue</Text>
         <Text style={{fontSize: 25}}>you were killed by a goblin lmao</Text>
@@ -338,11 +393,10 @@ class Death extends React.Component {
           title='REBIRTH' 
           color='firebrick'
         />
-        <View style={{paddingBottom: 10}}></View>
+        <View style={{marginTop: 10}}></View>
         <Button
           onPress={() => {
-            this.props.rebirth()
-            this.props.changeDisplay('leaderboard')
+            this.props.changeDisplay('submit');
           }}
           title='SUBMIT SCORE'
           color='firebrick'
@@ -353,7 +407,6 @@ class Death extends React.Component {
 }
 
 // COMBAT SCREEN //
-
 class Combat extends React.Component {
   render() {
     return (
@@ -498,5 +551,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'dimgray',
     paddingTop: '12%',
     paddingBottom: '7%',
+  },
+  deathContainer: {
+    flex: 1,
+    backgroundColor: 'dimgray',
+    alignItems: 'center',
+    paddingTop: '8%',
   },
 });

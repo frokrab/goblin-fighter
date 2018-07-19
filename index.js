@@ -13,22 +13,15 @@ const app = express();
 app.use(express.json());
 
 app.post('/leaderboard', (req, res) => {
-  client.query('INSERT INTO leaderboard (user, score) VALUES ($1, $2)', [req.body.name, req.body.score])
+  client.query('INSERT INTO leaderboard (name, score) VALUES ($1, $2)', [req.body.name, req.body.score])
   .then(() => res.sendStatus(201))
   .catch(() => res.sendStatus(500));
 });
 
 app.get('/leaderboard', (req, res) => {
-  console.log('request received!')
-  client.query('SELECT name, score FROM leaderboard ORDER BY score DESC LIMIT 50')
-  .then(data => {
-    console.log(data);
-    res.send(data)
-  })
-  .catch(err => {
-    console.log(err)
-    res.sendStatus(500)
-  });
+  client.query('SELECT name, score FROM leaderboard ORDER BY score DESC, id DESC LIMIT 50')
+  .then(data => res.send(data))
+  .catch(() => res.sendStatus(500));
 });
 
-app.listen(process.env.PORT, console.log(`Listening on ${process.env.PORT}...`));
+app.listen(process.env.PORT);
