@@ -78,11 +78,11 @@ export default class App extends React.Component {
     if (100 * Math.random() < (40 + (.3 * this.state.stats.LUCK))) {
       if (this.state.goblinInactive) {
         this.setState({
-          health: this.state.health <=80 ? this.state.health + 20 : 100,
+          health: this.state.health <= 70 ? this.state.health + 30 : 100,
         });
       } else {
         this.setState({
-          health: this.state.health + 10,
+          health: this.state.health + 15,
           goblinInactive: true,
         }, () => {
           setTimeout(() => {
@@ -98,7 +98,7 @@ export default class App extends React.Component {
     this.setState({
       cooldown: true,
     })
-    this.cooldownTimer(1.5);
+    this.cooldownTimer(1.25);
   }
 
   nap() {
@@ -110,7 +110,10 @@ export default class App extends React.Component {
   }
 
   kick() {
-    const rawDamage = Math.floor((20 * this.state.stats.ATTACK) / this.state.goblin.DEFENSE);
+    let rawDamage = Math.ceil((20 * this.state.stats.ATTACK) / this.state.goblin.DEFENSE);
+    if (100 * Math.random() < (7 + (.35 * this.state.stats.LUCK))) {
+      rawDamage = Math.ceil(rawDamage * 1.5);
+    }
     const healthRemaining = this.state.goblinHealth - rawDamage;
     const deadGoblins = this.state.goblinsKilled + 1;
     if (healthRemaining <= 0) {
