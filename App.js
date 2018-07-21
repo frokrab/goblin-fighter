@@ -1,8 +1,11 @@
 import React from 'react';
-import { StyleSheet, Text, View, Button, Image, TextInput } from 'react-native';
-const axios = require('axios');
-const palpacaSprite = require('./palpaca.png');
-const goblinSprite = require('./goblin.png');
+import { StyleSheet, Text, View, Button } from 'react-native';
+import Instructions from './Instructions.js';
+import Leaderboard from './Leaderboard.js';
+import ScoreSubmission from './ScoreSubmission.js';
+import Death from './Death.js';
+import Combat from './Combat.js';
+import Stats from './Stats.js';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -35,6 +38,7 @@ export default class App extends React.Component {
     this.kick = this.kick.bind(this);
     this.nap = this.nap.bind(this);
     this.charm = this.charm.bind(this);
+    this.spit = this.spit.bind(this);
     this.goblinRepeat = this.goblinRepeat.bind(this);
     this.changeDisplay = this.changeDisplay.bind(this);
   }
@@ -56,7 +60,7 @@ export default class App extends React.Component {
         this.setState({
           health: 0,
           goblinInactive: true,
-          display: 'defeat'
+          display: 'death',
         })
       } else {
         this.setState({
@@ -86,7 +90,7 @@ export default class App extends React.Component {
         });
       } else {
         this.setState({
-          health: this.state.health + 15,
+          health: this.state.health <= 85 ? this.state.health + 15 : 100,
           goblinInactive: true,
         }, () => {
           setTimeout(() => {
@@ -119,11 +123,10 @@ export default class App extends React.Component {
 
   kick() {
     let rawDamage = Math.ceil((25 * this.state.stats.ATTACK) / this.state.goblin.DEFENSE);
-    if (100 * Math.random() < (7 + (.35 * this.state.stats.LUCK))) {
+    if (this.state.goblinInactive || 100 * Math.random() < (7 + (.35 * this.state.stats.LUCK))) {
       rawDamage = Math.ceil(rawDamage * 1.5);
     }
     const healthRemaining = this.state.goblinHealth - rawDamage;
-    const deadGoblins = this.state.goblinsKilled + 1;
     if (healthRemaining <= 0) {
       this.setState({
         health: 100,
@@ -132,7 +135,7 @@ export default class App extends React.Component {
         cooldown: false,
         statPoints: 5,
         goblinInactive: true,
-        goblinsKilled: deadGoblins,
+        goblinsKilled: this.state.goblinsKilled + 1,
       });
     } else {
       this.setState({
@@ -140,6 +143,47 @@ export default class App extends React.Component {
         cooldown: true,
       });
       this.cooldownTimer(1);
+    }
+  }
+
+  spit() {
+    const level = this.state.goblinLevel;
+    let rawDamage = Math.ceil((10 * this.state.stats.ATTACK) / this.state.goblin.DEFENSE);
+    const healthRemaining = this.state.goblinHealth - rawDamage;
+    if (100 * Math.random() < (7 + (.35 * this.state.stats.LUCK))) {
+      rawDamage = Math.ceil(rawDamage * 1.5);
+    }
+    if (100 * Math.random() < (20 + (.3 * this.state.stats.LUCK))) {
+      if (!this.state.goblinInactive) {
+        this.setState({
+          goblinInactive: true,
+        }, () => {
+          setTimeout(() => {
+            if (this.state.goblinLevel === level && this.state.display === 'GOBLINS') {
+              this.setState({
+                goblinInactive: false,
+              }, this.goblinRepeat);
+            }
+          }, 2 * Math.ceil(2501 - this.state.goblin.SPEED * 12.5));
+        });
+      }
+    }
+    if (healthRemaining <= 0) {
+      this.setState({
+        health: 100,
+        display: 'stats',
+        goblinHealth: 0,
+        cooldown: false,
+        statPoints: 5,
+        goblinInactive: true,
+        goblinsKilled: this.state.goblinsKilled + 1,
+      });
+    } else {
+      this.setState({
+        goblinHealth: healthRemaining,
+        cooldown: true,
+      });
+      this.cooldownTimer(0.8);
     }
   }
 
@@ -233,7 +277,7 @@ export default class App extends React.Component {
           />
         </View>
       );
-    } else if (this.state.display === 'defeat') {
+    } else if (this.state.display === 'death') {
       return (
         <Death 
           changeDisplay={this.changeDisplay}
@@ -247,8 +291,10 @@ export default class App extends React.Component {
       return (
         <Combat
           goblin={this.state.goblin}
+          goblinInactive={this.state.goblinInactive}
           cooldown={this.state.cooldown}
           health={this.state.health}
+          spit={this.spit}
           kick={this.kick}
           nap={this.nap}
           charm={this.charm}
@@ -275,293 +321,6 @@ export default class App extends React.Component {
   }
 }
 
-// INSTRUCTIONS //
-class Instructions extends React.Component {
-  constructor(props) {
-    super(props);
-  }
-
-  render() {
-    return (
-      <View style={styles.instructionsContainerContainer}>
-        <View style={styles.instructionsContainer}>
-          <Text style={{fontWeight: 'bold'}}>Kick:</Text>
-          <Text style={{paddingLeft: 15, paddingBottom: 20}}>Kick the enemy to damage them with a very short cooldown.</Text>
-          <Text style={{fontWeight: 'bold'}}>Nap:</Text>
-          <Text style={{paddingLeft: 15, paddingBottom: 20}}>Take a short nap and restore all of your health at the cost of a very long cooldown.</Text>
-          <Text style={{fontWeight: 'bold'}}>Charm:</Text>
-          <Text style={{paddingLeft: 15, paddingBottom: 20}}>Attempt to charm the enemy, temporarily disbling them and healing you for a small amount with a pretty short cooldown. Charming a charmed enemy instead will heal you double.</Text>
-          <Text style={{fontWeight: 'bold'}}>Attack:</Text>
-          <Text style={{paddingLeft: 15, paddingBottom: 20}}>Makes your kicks deal more damage.</Text>
-          <Text style={{fontWeight: 'bold'}}>Defense:</Text>
-          <Text style={{paddingLeft: 15, paddingBottom: 20}}>Makes you take less damage from goblin attacks.</Text>
-          <Text style={{fontWeight: 'bold'}}>Speed:</Text>
-          <Text style={{paddingLeft: 15, paddingBottom: 20}}>Reduces all of your cooldown times.</Text>
-          <Text style={{fontWeight: 'bold'}}>Luck:</Text>
-          <Text style={{paddingLeft: 15, paddingBottom: 60}}>Fortune favors the bold. And the lucky.</Text>
-        </View>
-        <Button 
-          onPress={() => this.props.changeDisplay('stats')}
-          title='BACK'
-          color='firebrick'
-        />
-      </View>
-    );
-  }
-}
-
-// LEADERBOARD //
-class Leaderboard extends React.Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      leaderboard: [{}],
-    }
-  }
-
-  getLeaderboard() {
-    axios.get('http://54.219.137.82:6084/leaderboard')
-    .then(res => {
-      this.setState({
-      leaderboard: res.data.rows.slice(0,10),
-      })
-    })
-    .catch(this.setState({
-      leaderboard: [{
-        name: 'Error loading leaderboard, try again later',
-        score: '',
-      }]
-    }));
-  }
-
-  componentDidMount() {
-    this.getLeaderboard();
-  }
-
-  render() {
-    return (
-      <View style={styles.leaderboardContainer}>
-        <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-around'}}>
-          <Text style={{fontSize: 20}}>RANK</Text>
-          <Text style={{fontSize: 20}}>NAME</Text>
-          <Text style={{fontSize: 20}}>SCORE</Text>
-        </View>
-        {this.state.leaderboard.map((entry, index) => <LeaderboardEntry name={entry.name} score={entry.score} key={index} index={index}/>)}
-        <View style={{paddingBottom: 10}}></View>
-        <Button
-          onPress={() => this.props.back('stats')}
-          color='firebrick'
-          title='BACK'
-        />
-      </View>
-    );
-  }
-}
-
-class LeaderboardEntry extends React.Component {
-  render() {
-    return (
-      <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-around'}}>
-        <Text style={{fontSize: 20}}>{this.props.index + 1}</Text>
-        <Text style={{fontSize: 20}}>{this.props.name}</Text>
-        <Text style={{fontSize: 20}}>{this.props.score}</Text>
-      </View>
-    );
-  }
-}
-
-// SCORE SUBMISSION SCREEN //
-class ScoreSubmission extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      name: '',
-    };
-
-    this.submitScore = this.submitScore.bind(this);
-  }
-
-  submitScore() {
-    axios.post('http://54.219.137.82:6084/leaderboard', {
-      name: this.state.name,
-      score: this.props.score,
-    })
-    .then(() => {
-      this.props.rebirth();
-      this.props.changeDisplay('leaderboard');
-    })
-    .catch(() => {
-      this.props.changeDisplay('stats');
-    });
-  }
-
-  render() {
-    return (
-      <View style={styles.statsContainer}>
-        <TextInput 
-          style={{
-            borderWidth: 1,
-            width: '40%',
-            marginBottom: 30
-          }}
-          onChangeText={name => this.setState({ name })}
-          value={this.state.name}
-          maxLength={3}
-          placeholder='NGP'
-          placeholderTextColor='gray'
-          autoCapitalize='characters'
-        />
-        <Button 
-          title='SUBMIT'
-          color='firebrick'
-          onPress={this.submitScore}
-          />
-      </View>
-    );
-  }
-}
-
-// DEATH SCREEN //
-class Death extends React.Component {
-  constructor(props) {
-    super(props);
-  }
-
-  render() {
-    return (
-      <View style={styles.deathContainer}>
-        <Text style={{fontSize: 25}}>roses are red</Text>
-        <Text style={{fontSize: 25}}>violets are blue</Text>
-        <Text style={{fontSize: 25}}>you were killed by a goblin lmao</Text>
-        <Text style={{fontSize: 25}}>feels bad</Text>
-        <Text style={{paddingTop: '5%', fontSize: 20}}>You defeated {this.props.goblinsKilled} goblins</Text>
-        <Text style={{fontSize: 20}}>before they defeated you.</Text>
-        <Text style={{paddingTop: '5%', fontSize: 20, fontWeight: 'bold'}}>Final Stats: </Text>
-        <Text style={{fontSize: 20}}>ATTACK: {this.props.stats.ATTACK}</Text>
-        <Text style={{fontSize: 20}}>DEFENSE: {this.props.stats.DEFENSE}</Text>
-        <Text style={{fontSize: 20}}>SPEED: {this.props.stats.SPEED}</Text>
-        <Text style={{fontSize: 20}}>LUCK: {this.props.stats.LUCK}</Text>
-        <Text style={{paddingTop: '5%', fontSize: 20, fontWeight: 'bold'}}>Goblin Champion's Stats:</Text>
-        <Text style={{fontSize: 20}}>ATTACK: {this.props.goblin.ATTACK}</Text>
-        <Text style={{fontSize: 20}}>DEFENSE: {this.props.goblin.DEFENSE}</Text>
-        <Text style={{fontSize: 20}}>SPEED: {this.props.goblin.SPEED}</Text>
-        <Image source={goblinSprite} resizeMode='contain' />
-        <Button
-          onPress={this.props.rebirth}
-          title='REBIRTH' 
-          color='firebrick'
-        />
-        <View style={{marginTop: 10}}></View>
-        <Button
-          onPress={() => {
-            this.props.changeDisplay('submit');
-          }}
-          title='SUBMIT SCORE'
-          color='firebrick'
-        />
-      </View>
-    );
-  }
-}
-
-// COMBAT SCREEN //
-class Combat extends React.Component {
-  render() {
-    return (
-      <View style={styles.combatContainer}>
-        <View style={{flex: 1, flexDirection: 'row', justifyContent: 'space-around'}}>
-          <HealthBar health={this.props.health}/>
-          <HealthBar health={this.props.goblinHealth}/>
-        </View>
-        <View style={{ flex: 1, justifyContent: 'space-between', marginBottom: '15%'}}>
-          <View style={{ height: '50%', paddingLeft: '75%'}}>
-            <Image source={goblinSprite} />
-            <Text>{this.props.goblin.ATTACK} {this.props.goblin.DEFENSE} {this.props.goblin.SPEED}</Text>
-          </View>
-          <View style={{height: '50%', paddingLeft: '15%',}}>
-            <Image source={palpacaSprite} resizeMethod= 'scale' resizeMode='cover'/>
-          </View>
-        </View>
-        <Moves cooldown={this.props.cooldown} kick={this.props.kick} nap={this.props.nap} charm={this.props.charm}/>
-      </View>
-    )
-  }
-
-}
-
-class Moves extends React.Component {
-  render() {
-    return (
-      <View style={styles.movesBox}>
-        <Button
-          disabled={this.props.cooldown}
-          onPress={this.props.kick}
-          title='KICK'
-          color='firebrick'
-        />
-        <View style={{height: 10}}></View>
-        <Button
-          disabled={this.props.cooldown}
-          onPress={this.props.nap}
-          title='NAP'
-          color='firebrick'
-        />
-        <View style={{height: 10}}></View>
-        <Button
-          disabled={this.props.cooldown}
-          onPress={this.props.charm}
-          title='CHARM'
-          color='firebrick'
-        />
-      </View>
-    );
-  }
-}
-
-class HealthBar extends React.Component {
-  render() {
-    return (
-      <View style={styles.healthBarOuter}>
-        <View style={{backgroundColor: 'green', height: '100%', width: `${this.props.health}%`}}>
-          <Text style={{fontSize: 8}}>{this.props.health}/100</Text>
-        </View>
-      </View>
-    );
-  }
-}
-
-// STATS/TITLE SCREEN //
-
-class Stats extends React.Component {
-  render() {
-    return (
-      <View style={styles.statsTable}>
-        {Object.entries(this.props.stats).map((stat, index) => <StatsEntry addStatPoint={this.props.addStatPoint} key={index} stat={stat[0]} val={stat[1]} />)}
-        <Text style={{fontSize: 25}}>Available Points: {this.props.statPoints}</Text>
-        <Text style={{fontSize: 25}}>Goblins Defeated: {this.props.goblinsKilled}</Text>
-      </View>
-    );
-  }
-}
-
-class StatsEntry extends React.Component {
-  render() {
-    return (
-      <View>
-        <Text style={styles.statsEntry}>{this.props.stat}: {this.props.val}</Text>
-        <Button
-          disabled={this.props.val >= 200}
-          onPress={() => this.props.addStatPoint(this.props.stat)}
-          title='+'
-          color='firebrick'
-        />
-      </View>
-    );
-  }
-}
-
-// STYLESHEETS //
-
 const styles = StyleSheet.create({
   statsContainer: {
     flex: 1,
@@ -575,56 +334,5 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     fontWeight: 'bold',
     color: 'darkseagreen',
-  },
-  statsTable: {
-    flex: 1,
-    justifyContent: 'flex-start',
-    marginTop: '10%',
-  },
-  statsEntry: {
-    fontSize: 27,
-    paddingRight: 20
-  },
-  healthBarOuter: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor:'black',
-    height: 10,
-    width: '30%',
-  },
-  combatContainer: {
-    flex: 1,
-    backgroundColor: 'dimgray',
-    paddingTop: '12%',
-  },
-  movesBox: {
-    borderColor: 'black',
-    borderWidth: 2,
-    width: '100%',
-    height: '30%',
-    backgroundColor: 'darkgray',    
-  },
-  leaderboardContainer: {
-    flex: 1,
-    justifyContent: 'flex-start',
-    backgroundColor: 'dimgray',
-    paddingTop: '12%',
-    paddingBottom: '7%',
-  },
-  deathContainer: {
-    flex: 1,
-    backgroundColor: 'dimgray',
-    alignItems: 'center',
-    paddingTop: '8%',
-  },
-  instructionsContainerContainer: {
-    flex: 1,
-    backgroundColor: 'dimgray', 
-    paddingTop: '12%',
-  },
-  instructionsContainer: {
-    flex: 1,
-    backgroundColor: 'gray', 
-    margin: '5%',
-    padding: '3%',
   },
 });
