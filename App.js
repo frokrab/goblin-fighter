@@ -47,7 +47,11 @@ export default class App extends React.Component {
 
   goblinRepeat() {
     if (!this.state.goblinInactive) {
-      const healthRemaining = this.state.health - Math.ceil((20 * this.state.goblin.ATTACK) / this.state.stats.DEFENSE);
+      let rawDamage = Math.ceil((20 * this.state.goblin.ATTACK) / this.state.stats.DEFENSE);
+      if (100 * Math.random() < (3 + (.08 * this.state.stats.LUCK))) {
+        rawDamage = 0;
+      }
+      const healthRemaining = this.state.health - rawDamage;
       if (healthRemaining <= 0) {
         this.setState({
           health: 0,
@@ -58,14 +62,14 @@ export default class App extends React.Component {
         this.setState({
           health: healthRemaining,
         }, () => {
-          setTimeout(this.goblinRepeat, Math.ceil(2001 - this.state.goblin.SPEED * 10));
+          setTimeout(this.goblinRepeat, Math.ceil(2501 - this.state.goblin.SPEED * 12.5));
         });
       }
     }
   }
 
   cooldownTimer(timeFactor) {
-    const cooldownTime = Math.ceil(2001 - this.state.stats.SPEED * 10) * timeFactor;
+    const cooldownTime = Math.ceil(2501 - this.state.stats.SPEED * 12.5) * timeFactor;
     setTimeout(() => {
       this.setState({
         cooldown: false,
@@ -91,7 +95,7 @@ export default class App extends React.Component {
                 goblinInactive: false,
               }, this.goblinRepeat);
             }
-          }, 3 * Math.ceil(2001 - this.state.goblin.SPEED * 10));
+          }, 3 * Math.ceil(2501 - this.state.goblin.SPEED * 12.5));
         });
       }
     }
@@ -106,11 +110,15 @@ export default class App extends React.Component {
       health: 100,
       cooldown: true,
     });
-    this.cooldownTimer(3);
+    let cooldownFactor = 3;
+    if (100 * Math.random() < (7 + (.35 * this.state.stats.LUCK))) {
+      cooldownFactor = 2.2;
+    }
+    this.cooldownTimer(cooldownFactor);
   }
 
   kick() {
-    let rawDamage = Math.ceil((20 * this.state.stats.ATTACK) / this.state.goblin.DEFENSE);
+    let rawDamage = Math.ceil((25 * this.state.stats.ATTACK) / this.state.goblin.DEFENSE);
     if (100 * Math.random() < (7 + (.35 * this.state.stats.LUCK))) {
       rawDamage = Math.ceil(rawDamage * 1.5);
     }
@@ -177,6 +185,9 @@ export default class App extends React.Component {
     for (let i = 0; i < level; i++) {
       statsArray[Math.floor(3 * Math.random())] += 1;
     }
+    if (100 * Math.random() < (1 + (.05 * this.state.stats.LUCK))) {
+      statsArray = [7, 7, 7];
+    }
     let goblinStats = {
       ATTACK: statsArray[0],
       DEFENSE: statsArray[1],
@@ -206,6 +217,12 @@ export default class App extends React.Component {
             onPress={this.beginFight}
             title='FIGHT'
             disabled={this.state.statPoints !== 0}
+            color='firebrick'
+          />
+          <View style={{paddingBottom: 10}}></View> 
+          <Button
+            onPress={() => this.changeDisplay('instructions')}
+            title='INSTRUCTIONS'
             color='firebrick'
           />
           <View style={{paddingBottom: 10}}></View> 
@@ -250,7 +267,46 @@ export default class App extends React.Component {
           rebirth={this.rebirth}
         />
       )
+    } else if (this.state.display === 'instructions') {
+      return (
+        <Instructions changeDisplay={this.changeDisplay} />
+      );
     }
+  }
+}
+
+// INSTRUCTIONS //
+class Instructions extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+    return (
+      <View style={styles.instructionsContainerContainer}>
+        <View style={styles.instructionsContainer}>
+          <Text style={{fontWeight: 'bold'}}>Kick:</Text>
+          <Text style={{paddingLeft: 15, paddingBottom: 20}}>Kick the enemy to damage them with a very short cooldown.</Text>
+          <Text style={{fontWeight: 'bold'}}>Nap:</Text>
+          <Text style={{paddingLeft: 15, paddingBottom: 20}}>Take a short nap and restore all of your health at the cost of a very long cooldown.</Text>
+          <Text style={{fontWeight: 'bold'}}>Charm:</Text>
+          <Text style={{paddingLeft: 15, paddingBottom: 20}}>Attempt to charm the enemy, temporarily disbling them and healing you for a small amount with a pretty short cooldown. Charming a charmed enemy instead will heal you double.</Text>
+          <Text style={{fontWeight: 'bold'}}>Attack:</Text>
+          <Text style={{paddingLeft: 15, paddingBottom: 20}}>Makes your kicks deal more damage.</Text>
+          <Text style={{fontWeight: 'bold'}}>Defense:</Text>
+          <Text style={{paddingLeft: 15, paddingBottom: 20}}>Makes you take less damage from goblin attacks.</Text>
+          <Text style={{fontWeight: 'bold'}}>Speed:</Text>
+          <Text style={{paddingLeft: 15, paddingBottom: 20}}>Reduces all of your cooldown times.</Text>
+          <Text style={{fontWeight: 'bold'}}>Luck:</Text>
+          <Text style={{paddingLeft: 15, paddingBottom: 60}}>Fortune favors the bold. And the lucky.</Text>
+        </View>
+        <Button 
+          onPress={() => this.props.changeDisplay('stats')}
+          title='BACK'
+          color='firebrick'
+        />
+      </View>
+    );
   }
 }
 
@@ -363,7 +419,6 @@ class ScoreSubmission extends React.Component {
       </View>
     );
   }
-
 }
 
 // DEATH SCREEN //
@@ -418,12 +473,12 @@ class Combat extends React.Component {
           <HealthBar health={this.props.health}/>
           <HealthBar health={this.props.goblinHealth}/>
         </View>
-        <View style={{ flex: 1, justifyContent: 'space-between' }}>
+        <View style={{ flex: 1, justifyContent: 'space-between', marginBottom: '15%'}}>
           <View style={{ height: '50%', paddingLeft: '75%'}}>
             <Image source={goblinSprite} />
             <Text>{this.props.goblin.ATTACK} {this.props.goblin.DEFENSE} {this.props.goblin.SPEED}</Text>
           </View>
-          <View style={{height: '50%', paddingLeft: '25%',}}>
+          <View style={{height: '50%', paddingLeft: '15%',}}>
             <Image source={palpacaSprite} resizeMethod= 'scale' resizeMode='cover'/>
           </View>
         </View>
@@ -513,7 +568,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'dimgray',
     alignItems: 'center',
     paddingTop: '12%',
-    paddingBottom: '5%',
+    paddingBottom: '3%',
   },
   title: {
     fontSize: 40,
@@ -527,7 +582,7 @@ const styles = StyleSheet.create({
     marginTop: '10%',
   },
   statsEntry: {
-    fontSize: 30,
+    fontSize: 27,
     paddingRight: 20
   },
   healthBarOuter: {
@@ -560,5 +615,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'dimgray',
     alignItems: 'center',
     paddingTop: '8%',
+  },
+  instructionsContainerContainer: {
+    flex: 1,
+    backgroundColor: 'dimgray', 
+    paddingTop: '12%',
+  },
+  instructionsContainer: {
+    flex: 1,
+    backgroundColor: 'gray', 
+    margin: '5%',
+    padding: '3%',
   },
 });
